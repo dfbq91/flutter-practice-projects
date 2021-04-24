@@ -1,11 +1,13 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:form_validation/src/models/product_model.dart';
-import 'package:form_validation/src/providers/products_provider.dart';
-import 'package:form_validation/src/utils/utils.dart' as utils;
+import 'package:form_validation/src/bloc/provider.dart';
 import 'package:image_picker/image_picker.dart';
+
+import 'package:form_validation/src/models/product_model.dart';
+import 'package:form_validation/src/utils/utils.dart' as utils;
+
+// import 'package:flutter/services.dart';
+// import 'package:form_validation/src/providers/products_provider.dart';
 
 class ProductPage extends StatefulWidget {
   @override
@@ -15,13 +17,16 @@ class ProductPage extends StatefulWidget {
 class _ProductPageState extends State<ProductPage> {
   final formKey = GlobalKey<FormState>();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isSaving = false;
+
+  // final productProvider = new ProductsProvider();
+  ProductsBloc productsBloc;
   ProductModel product = new ProductModel();
-  final productProvider = new ProductsProvider();
-  PickedFile photo;
+  bool _isSaving = false;
+  File photo;
 
   @override
   Widget build(BuildContext context) {
+    productsBloc = Provider.productsBloc(context);
     final ProductModel productData = ModalRoute.of(context).settings.arguments;
 
     if (productData != null) {
@@ -92,20 +97,23 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   Widget _createSubmitButton() {
-    return RaisedButton.icon(
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+      ),
       label: Text('Guardar'),
       icon: Icon(
         Icons.save,
         color: Colors.white,
       ),
-      color: Colors.teal,
-      textColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+      // color: Colors.teal,
+      // textColor: Colors.white,
       onPressed: _isSaving ? null : _submit,
     );
   }
 
-  void _submit() {
+  void _submit() async {
     bool isValidForm = formKey.currentState.validate();
 
     if (!isValidForm) return;
@@ -115,10 +123,17 @@ class _ProductPageState extends State<ProductPage> {
       _isSaving = true;
     });
 
+    if (photo != null) {
+      // product.photoUrl = await productProvider.uploadImage(photo);
+      product.photoUrl = await productsBloc.uploadImage(photo);
+    }
+
     if (product.id == null) {
-      productProvider.createProduct(product);
+      // productProvider.createProduct(product);
+      productsBloc.createProduct(product);
     } else {
-      productProvider.editProduct(product);
+      // productProvider.editProduct(product);
+      productsBloc.editProduct(product);
     }
 
     showSnackBar('El registro ha sido actualizado');
@@ -148,26 +163,35 @@ class _ProductPageState extends State<ProductPage> {
 
   Widget _showPhoto() {
     if (product.photoUrl != null) {
-      // implement product photo
-      return Container();
-    } else {
-      return Image(
-        image: AssetImage(photo?.path ?? 'assets/no-image.png'),
+      return FadeInImage(
+        placeholder: AssetImage('assets/jar-loading.gif'),
+        image: NetworkImage(product.photoUrl),
         height: 300.0,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       );
+    } else {
+      if (photo != null) {
+        return Image.file(
+          photo,
+          fit: BoxFit.cover,
+          height: 300.0,
+        );
+      }
+      return Image.asset('assets/no-image.png');
     }
   }
 
   void _selectOrTakePhoto(ImageSource source) async {
     final imagePicker = new ImagePicker();
 
-    photo = await imagePicker.getImage(
+    final pickedImage = await imagePicker.getImage(
       source: source,
     );
 
+    photo = File(pickedImage.path);
+
     if (photo != null) {
-      // clean
+      product.photoUrl = null;
     }
     setState(() {});
   }

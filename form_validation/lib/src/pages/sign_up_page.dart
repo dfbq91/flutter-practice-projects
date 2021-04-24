@@ -3,14 +3,13 @@ import 'package:form_validation/src/bloc/provider.dart';
 import 'package:form_validation/src/providers/user_provider.dart';
 import 'package:form_validation/src/utils/utils.dart';
 
-class LoginPage extends StatelessWidget {
+class SignUpPage extends StatelessWidget {
   final userProvider = new UserProvider();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
-        children: [createBackground(context), _loginForm(context)],
+        children: [createBackground(context), _signUpForm(context)],
       ),
     );
   }
@@ -68,7 +67,7 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _loginForm(BuildContext context) {
+  Widget _signUpForm(BuildContext context) {
     final bloc = Provider.of(context);
     final double width = MediaQuery.of(context).size.width;
 
@@ -94,7 +93,7 @@ class LoginPage extends StatelessWidget {
               ]),
           child: Column(
             children: [
-              Text('Ingreso', style: TextStyle(fontSize: 20.0)),
+              Text('Crear cuenta', style: TextStyle(fontSize: 20.0)),
               SizedBox(height: 50.0),
               _createEmailField(bloc),
               SizedBox(height: 30.0),
@@ -106,8 +105,8 @@ class LoginPage extends StatelessWidget {
         ),
         SizedBox(height: 15.0),
         TextButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, 'signUp'),
-            child: Text('Crear una nueva cuenta')),
+            onPressed: () => Navigator.pushReplacementNamed(context, 'login'),
+            child: Text('Ya tengo una cuenta. Iniciar sesión')),
         SizedBox(
           height: 100.0,
         )
@@ -173,7 +172,7 @@ class LoginPage extends StatelessWidget {
           child: Container(
             child: Text('Ingresar'),
           ),
-          onPressed: snapshot.hasData ? () => _login(bloc, context) : null,
+          onPressed: snapshot.hasData ? () => _signUp(bloc, context) : null,
           // elevation: 0.0,
           // color: Colors.teal,
           // textColor: Colors.white,
@@ -182,12 +181,15 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  _login(LoginBloc bloc, BuildContext context) async {
-    final Map loginResult = await userProvider.login(bloc.email, bloc.password);
-    if (loginResult.containsKey('token')) {
+  _signUp(LoginBloc bloc, BuildContext context) async {
+    userProvider.newUser(bloc.email, bloc.password);
+
+    final Map signUpResult =
+        await userProvider.newUser(bloc.email, bloc.password);
+    if (signUpResult.containsKey('token')) {
       Navigator.pushReplacementNamed(context, 'homepage');
     } else {
-      showAlert(context, "Las credenciales no son válidas");
+      showAlert(context, signUpResult['message']);
     }
   }
 }

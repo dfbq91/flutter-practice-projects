@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:form_validation/src/bloc/provider.dart';
 import 'package:form_validation/src/models/product_model.dart';
-import 'package:form_validation/src/providers/products_provider.dart';
 
 class HomePage extends StatelessWidget {
-  final productsProvider = new ProductsProvider();
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of(context);
+    final productsBloc = Provider.productsBloc(context);
+    productsBloc.getProducts();
 
     return Scaffold(
       appBar: AppBar(title: Text('Home')),
-      body: _createProductsList(),
+      body: _createProductsList(productsBloc),
       floatingActionButton: _createButton(context),
     );
   }
@@ -24,39 +23,57 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _createProductsList() {
-    return FutureBuilder(
-      future: productsProvider.getProducts(),
-      builder:
-          (BuildContext context, AsyncSnapshot<List<ProductModel>> snapshot) {
-        if (snapshot.hasData) {
-          final products = snapshot.data;
-          return ListView.builder(
-              itemCount: products.length,
-              itemBuilder: (context, index) =>
-                  _createProduct(context, products[index]));
-        } else {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-      },
-    );
+  Widget _createProductsList(ProductsBloc productsBloc) {
+    return StreamBuilder(
+        stream: productsBloc.productsStream,
+        builder:
+            (BuildContext context, AsyncSnapshot<List<ProductModel>> snapshot) {
+          if (snapshot.hasData) {
+            final products = snapshot.data;
+            return ListView.builder(
+                itemCount: products.length,
+                itemBuilder: (context, index) =>
+                    _createProduct(context, products[index], productsBloc));
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        });
   }
 
-  Widget _createProduct(BuildContext context, ProductModel product) {
+  Widget _createProduct(
+      BuildContext context, ProductModel product, ProductsBloc productsBloc) {
     return Dismissible(
       key: UniqueKey(),
       background: Container(color: Colors.red),
       onDismissed: (direction) {
-        productsProvider.deleteProduct(product.id);
+        // productsProvider.deleteProduct(product.id);
+        productsBloc.deleteProduct(product.id);
       },
-      child: ListTile(
-        title: Text('${product.title} ${product.value}'),
-        subtitle: Text(product.id),
-        onTap: () {
-          Navigator.pushNamed(context, 'product', arguments: product);
-        },
+      child: Card(
+        child: Column(
+          children: [
+            product.photoUrl == null
+                ? Image(
+                    image: AssetImage('assets/no-image.png'),
+                  )
+                : FadeInImage(
+                    placeholder: AssetImage('assets/jar-loading.gif'),
+                    image: NetworkImage(product.photoUrl),
+                    fit: BoxFit.cover,
+                    height: 300.0,
+                    width: double.infinity,
+                  ),
+            ListTile(
+              title: Text('${product.title} ${product.value}'),
+              subtitle: Text(product.id),
+              onTap: () {
+                Navigator.pushNamed(context, 'product', arguments: product);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
