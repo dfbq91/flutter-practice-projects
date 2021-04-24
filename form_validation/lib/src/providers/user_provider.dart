@@ -4,7 +4,7 @@ import 'package:form_validation/src/user_preferences/user_preferences.dart';
 import 'package:http/http.dart' as http;
 
 class UserProvider {
-  final String firebaseToken = 'AIzaSyAvt1ODkDJ2Bvn28AQarlBrhC1iHxxjBpM';
+  final String firebaseToken = '';
   final _userPreferences = new UserPreferences();
 
   Future<Map<String, dynamic>> login(String email, String password) async {
